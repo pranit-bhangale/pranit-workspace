@@ -1,4 +1,4 @@
-package com.pranit.workspace.security.constant;
+package com.pranit.workspace.auth.constant;
 
 import java.time.Duration;
 

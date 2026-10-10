@@ -1,4 +1,4 @@
-package com.pranit.workspace.security.constant;
+package com.pranit.workspace.auth.constant;
 
 public final class JwtClaim {
     public static final String TOKEN_TYPE = "token";

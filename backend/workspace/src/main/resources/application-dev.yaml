@@ -37,8 +37,8 @@ spring:
   # Redis Configuration
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
       timeout: 5s
   # Java Mail Sender Configuration
@@ -62,7 +62,7 @@ server:
   servlet:
     session:
       cookie:
-        name: ${COOKIE_NAME}JSESSIONID
+        name: JSESSIONID
         http-only: ${COOKIE_HTTP_ONLY}
         secure: ${COOKIE_SECURE}
         same-site: ${COOKIE_SAME_SITE}
