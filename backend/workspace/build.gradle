@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    implementation("io.minio:minio:9.0.3")
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
@@ -67,6 +68,46 @@ dependencyManagement {
     imports {
         mavenBom "org.springframework.modulith:spring-modulith-bom:${springModulithVersion}"
         mavenBom "com.fasterxml.jackson:jackson-bom:${jacksonVersion}"
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == 'org.bouncycastle'
+                && requested.name == 'bcprov-jdk18on') {
+            useVersion('1.86')
+            because('Fix reported Bouncy Castle vulnerabilities')
+        }
+        if (requested.group == 'org.xerial.snappy'
+                && requested.name == 'snappy-java') {
+            useVersion('1.1.10.9')
+            because('Fix CVE-2026-90559')
+        }
+        if (requested.group == 'ch.qos.logback'
+                && requested.name in ['logback-classic', 'logback-core']) {
+            useVersion('1.6.3')
+            because('Fix CVE-2026-19880')
+        }
+        if (requested.group == 'tools.jackson.core'
+                && requested.name in [
+                'jackson-core',
+                'jackson-databind',
+                'jackson-annotations'
+        ]) {
+            useVersion('3.2.3')
+            because('Fix reported Jackson 3 vulnerabilities')
+        }
+        if (requested.group == 'org.apache.tomcat.embed'
+                && requested.name.startsWith('tomcat-embed-')) {
+            useVersion('11.0.26')
+            because('Fix reported Apache Tomcat vulnerabilities')
+        }
+
+        if (requested.group == 'org.postgresql' &&
+                requested.name == 'postgresql') {
+            useVersion('42.7.14')
+            because('Fix reported PostgreSQL JDBC vulnerabilities')
+        }
     }
 }
 

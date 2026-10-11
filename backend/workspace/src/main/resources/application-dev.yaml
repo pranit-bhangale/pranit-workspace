@@ -111,6 +111,12 @@ workspace:
       - Access-Control-Request-Method
       - Access-Control-Request-Headers
     allow-credentials: true
+# MinIO Configuration
+minio:
+  endpoint: ${MINIO_URL}
+  access-key: ${ACCESS_KEY}
+  secret-key: ${SECRET_KEY}
+  bucket-name: ${BUCKET_NAME}
 # Swagger Configuration
 springdoc:
   default-produces-media-type: application/json
