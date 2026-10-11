@@ -20,9 +20,9 @@ import lombok.Setter;
 @Builder
 public class ProfileMedia {
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+    @Column(name = "avatar_key", length = 500)
+    private String avatarKey;
 
-    @Column(name = "resume_url", length = 500)
-    private String resumeUrl;
+    @Column(name = "resume_key", length = 500)
+    private String resumeKey;
 }

@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MinioServiceImpl implements MinioService {
 
+    private static final int MAX_PRESIGNED_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60;
     private final MinioClient minioClient;
     private final MinioProperties properties;
 
@@ -76,7 +77,7 @@ public class MinioServiceImpl implements MinioService {
                 .method(Http.Method.GET)
                 .bucket(this.properties.bucketName())
                 .object(objectName)
-                .expiry(7, TimeUnit.DAYS)
+                .expiry(this.properties.presignedUrlExpiryDay(), TimeUnit.DAYS)
                 .build());
     }
 }

@@ -57,6 +57,11 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+  # Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 16MB
 # Spring Session Configuration
 server:
   servlet:
@@ -117,6 +122,7 @@ minio:
   access-key: ${ACCESS_KEY}
   secret-key: ${SECRET_KEY}
   bucket-name: ${BUCKET_NAME}
+  presigned-url-expiry-days: 7
 # Swagger Configuration
 springdoc:
   default-produces-media-type: application/json
