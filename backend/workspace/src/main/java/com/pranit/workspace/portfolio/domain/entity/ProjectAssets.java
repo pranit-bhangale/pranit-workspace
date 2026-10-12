@@ -26,15 +26,9 @@ public class ProjectAssets {
     @Column(name = "github_link", length = 500)
     private String githubLink;
 
-    @Column(name = "documentation_url", length = 500)
-    private String documentationUrl;
-
     @Column(name = "video_url", length = 500)
     private String videoUrl;
-
-    @Column(name = "document_url", length = 500)
-    private String documentUrl;
-
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
+    
+    @Column(name = "image_key", length = 500)
+    private String imageKey;
 }

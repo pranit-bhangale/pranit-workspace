@@ -2,7 +2,6 @@ package com.pranit.workspace.portfolio.domain.dto;
 
 import com.pranit.workspace.portfolio.domain.enums.EmploymentType;
 import com.pranit.workspace.portfolio.domain.enums.WorkplaceType;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,7 +40,7 @@ public record CreateExperienceRequest(
         String descriptionMarkdown,
 
         @NotNull(message = "Tech stacks list is required")
-        List<@Valid TechStackResponse> techStacks,
+        List<Long> techStackIds,
 
         @NotNull(message = "Display order is required")
         @PositiveOrZero(message = "Display order must be zero or greater")

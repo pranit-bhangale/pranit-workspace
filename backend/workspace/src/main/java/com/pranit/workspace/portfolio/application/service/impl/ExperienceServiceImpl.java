@@ -99,11 +99,14 @@ public class ExperienceServiceImpl implements ExperienceService {
                 .periodDisplay(request.periodDisplay())
                 .isCurrent(request.isCurrent())
                 .build();
-        final List<TechStack> techStacks = request.techStacks().stream()
-                .map(tech -> techStackRepository.findById(tech.id())
-                        .orElseThrow(() -> new ResourceNotFoundException("Tech stack not found: " + tech.id())))
+        final List<Long> techStackIds = request.techStackIds()
+                .stream()
                 .distinct()
                 .toList();
+        final List<TechStack> techStacks = this.techStackRepository.findAllById(techStackIds);
+        if (techStacks.size() != techStackIds.size()) {
+            throw new ResourceNotFoundException("One or more tech stacks were not found");
+        }
         final Experience experience = Experience.builder()
                 .userId(currentUserId)
                 .company(request.company())

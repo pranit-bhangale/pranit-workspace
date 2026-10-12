@@ -9,14 +9,14 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -29,6 +29,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "projects", indexes = {
@@ -49,13 +50,8 @@ public class Project extends Auditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_project_user")
-    )
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @Column(name = "title", nullable = false, length = 150)
     private String title;
@@ -70,18 +66,23 @@ public class Project extends Auditable {
 
     @Column(name = "description", columnDefinition = "TEXT", nullable = false)
     private String description;
-
-    @Column(name = "full_description_markdown", columnDefinition = "TEXT")
-    private String fullDescriptionMarkdown;
-
+    
     @Embedded
     private ProjectAssets assets;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(
-            name = "project_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_tech_stack_project")
+    @ManyToMany
+    @JoinTable(
+            name = "project_tech_stacks",
+            joinColumns = @JoinColumn(
+                    name = "project_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_project_tech_stack")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "tech_stack_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_tech_stack_project")
+            )
     )
     @Builder.Default
     private List<TechStack> techStacks = new ArrayList<>();
@@ -98,6 +99,21 @@ public class Project extends Auditable {
     @Column(name = "is_featured", nullable = false)
     @Builder.Default
     private Boolean isFeatured = false;
+
+    @ManyToMany
+    @JoinTable(
+            name = "project_tags",
+            joinColumns = @JoinColumn(
+                    name = "project_id",
+                    foreignKey = @ForeignKey(name = "fk_project_tag")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "tag_id",
+                    foreignKey = @ForeignKey(name = "fk_tag_project")
+            )
+    )
+    @Builder.Default
+    private List<Tag> tags = new ArrayList<>();
 
     @Column(name = "display_order", nullable = false)
     @Builder.Default

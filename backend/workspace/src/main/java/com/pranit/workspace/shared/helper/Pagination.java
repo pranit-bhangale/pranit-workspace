@@ -15,8 +15,8 @@ import java.util.function.Function;
 @UtilityClass
 public class Pagination {
 
-    public static final int DEFAULT_PAGE_SIZE = 20;
-    public static final int MAX_PAGE_SIZE = 100;
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    public static final int MAX_PAGE_SIZE = 25;
 
     private static Pageable clamp(final Pageable pageable) {
         if (pageable == null || pageable.isUnpaged()) return PageRequest.of(0, DEFAULT_PAGE_SIZE);
