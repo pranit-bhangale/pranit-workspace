@@ -83,7 +83,7 @@ public class EducationServiceImpl implements EducationService {
             (final int page, final int size, final String keyword,
              final String sortBy, final String sortDirection) {
         final Specification<Education> specification = EducationSpecification.searchKeyword(keyword);
-        return Pagination.search
+        return Pagination.paginate
                 (this.educationRepository, specification, page, size, sortBy, sortDirection, EducationDetailResponse::from);
     }
 

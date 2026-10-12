@@ -64,7 +64,7 @@ public class ContactMessageServiceImpl implements ContactMessageService {
         final Specification<ContactMessage> specification = Specification
                 .where(MessageSpecification.searchKeyword(keyword))
                 .and(MessageSpecification.hasStatus(status));
-        return Pagination.search
+        return Pagination.paginate
                 (this.contactMessageRepository, specification, page, size, sortBy, sortDirection, ContactMessageResponse::from);
     }
 

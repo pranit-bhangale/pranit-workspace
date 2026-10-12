@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.function.Function;
@@ -24,7 +25,13 @@ public class Pagination {
         return PageRequest.of(page, size, pageable.getSort());
     }
 
-    public static <E, D> PageResponse<D> search
+    public static <E, D> PageResponse<D> paginate
+            (final JpaRepository<E, ?> repository, final Pageable pageable, final Function<E, D> mapper) {
+        final Page<E> result = repository.findAll(clamp(pageable));
+        return PageResponse.from(result, mapper);
+    }
+
+    public static <E, D> PageResponse<D> paginate
             (final JpaSpecificationExecutor<E> repository, final Specification<E> specification,
              final int page, final int size, final String sortBy,
              final String sortDirection, final Function<E, D> mapper) {

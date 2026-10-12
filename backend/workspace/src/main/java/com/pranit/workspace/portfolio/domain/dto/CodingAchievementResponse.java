@@ -1,43 +1,28 @@
 package com.pranit.workspace.portfolio.domain.dto;
 
-import com.pranit.workspace.portfolio.domain.entity.Education;
-import com.pranit.workspace.portfolio.domain.enums.DegreeType;
+import com.pranit.workspace.portfolio.domain.entity.CodingAchievement;
+import com.pranit.workspace.portfolio.domain.enums.CodingPlatform;
 import lombok.Builder;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Builder
-public record EducationDetailResponse(
+public record CodingAchievementResponse(
         Long id,
         UUID userId,
-        String degreeTitle,
-        DegreeType degreeType,
-        String institution,
-        LocalDate startDate,
-        LocalDate endDate,
-        String periodDisplay,
-        Boolean isCurrent,
-        String gradeValue,
-        String gradeScale,
-        String distinctionStatus,
+        CodingPlatform platform,
+        Integer problemsSolved,
+        String profileLink,
         Integer displayOrder
 ) {
-    public static EducationDetailResponse from(final Education education) {
-        return EducationDetailResponse.builder()
-                .id(education.getId())
-                .userId(education.getUserId())
-                .degreeTitle(education.getDegreeTitle())
-                .degreeType(education.getDegreeType())
-                .institution(education.getInstitution())
-                .startDate(education.getPeriod().getStartDate())
-                .endDate(education.getPeriod().getEndDate())
-                .periodDisplay(education.getPeriod().getPeriodDisplay())
-                .isCurrent(education.getPeriod().getIsCurrent())
-                .gradeValue(education.getEvaluation().getGradeValue())
-                .gradeScale(education.getEvaluation().getGradeScale())
-                .distinctionStatus(education.getEvaluation().getDistinctionStatus())
-                .displayOrder(education.getDisplayOrder())
+    public static CodingAchievementResponse from(final CodingAchievement achievement) {
+        return CodingAchievementResponse.builder()
+                .id(achievement.getId())
+                .userId(achievement.getUserId())
+                .platform(achievement.getPlatform())
+                .problemsSolved(achievement.getProblemsSolved())
+                .profileLink(achievement.getProfileLink())
+                .displayOrder(achievement.getDisplayOrder())
                 .build();
     }
 }

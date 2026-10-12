@@ -47,11 +47,7 @@ public class CodingAchievement extends Auditable {
 
     @Column(name = "problems_solved", nullable = false)
     private Integer problemsSolved;
-
-    @Column(name = "label", length = 100)
-    @Builder.Default
-    private String label = "Problems Solved";
-
+    
     @Column(name = "profile_link", length = 500)
     private String profileLink;
 

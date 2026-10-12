@@ -72,7 +72,7 @@ public class SkillServiceImpl implements SkillService {
             (final int page, final int size, final String keyword,
              final String sortBy, final String sortDirection) {
         final Specification<Skill> specification = SkillSpecification.searchKeyword(keyword);
-        return Pagination.search
+        return Pagination.paginate
                 (this.skillRepository, specification, page, size, sortBy, sortDirection, SkillResponse::from);
     }
 
