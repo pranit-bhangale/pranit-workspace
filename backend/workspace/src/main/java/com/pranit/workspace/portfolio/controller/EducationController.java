@@ -1,11 +1,10 @@
 package com.pranit.workspace.portfolio.controller;
 
-import com.pranit.workspace.portfolio.application.service.SkillService;
-import com.pranit.workspace.portfolio.domain.dto.CreateSkillRequest;
-import com.pranit.workspace.portfolio.domain.dto.SkillResponse;
-import com.pranit.workspace.portfolio.domain.dto.UpdateSkillRequest;
-import com.pranit.workspace.portfolio.domain.enums.ProficiencyLevel;
-import com.pranit.workspace.portfolio.domain.enums.SkillCategory;
+import com.pranit.workspace.portfolio.application.service.EducationService;
+import com.pranit.workspace.portfolio.domain.dto.CreateEducationRequest;
+import com.pranit.workspace.portfolio.domain.dto.EducationDetailResponse;
+import com.pranit.workspace.portfolio.domain.dto.UpdateEducationRequest;
+import com.pranit.workspace.portfolio.domain.enums.DegreeType;
 import com.pranit.workspace.shared.wrapper.ErrorResponse;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,76 +34,70 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/skills")
+@RequestMapping("/api/education")
 @RequiredArgsConstructor
 @Tag(
-        name = "Skill",
-        description = "Endpoints for Skill APIs"
+        name = "Education Details",
+        description = "Endpoints for Education Details APIs"
 )
-public class SkillController {
+public class EducationController {
 
-    private final SkillService skillService;
+    private final EducationService educationService;
 
-    @GetMapping(value = "/category", version = "v1")
-    public ResponseEntity<List<SkillCategory>> getAllSkillCategories() {
-        return ResponseEntity.ok(this.skillService.getSkillCategories());
+    @GetMapping(value = "/degree", version = "v1")
+    public ResponseEntity<List<DegreeType>> getDegrees() {
+        return ResponseEntity.ok(this.educationService.getDegrees());
     }
 
-    @GetMapping(value = "/level", version = "v1")
-    public ResponseEntity<List<ProficiencyLevel>> getAllProficiencyLevel() {
-        return ResponseEntity.ok(this.skillService.getAllProficiencyLevel());
+    @PostMapping(value = "/details/new", version = "v1")
+    @Operation(summary = "New education detail", description = "Create new education detail record.")
+    public ResponseEntity<String> createNewEducationDetails(@Valid @RequestBody final CreateEducationRequest request) {
+        this.educationService.createNewEducationDetail(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body("New education detail created.");
     }
 
-    @PostMapping(value = "/new", version = "v1")
-    @Operation(summary = "New Skill", description = "Create new Skill record.")
-    public ResponseEntity<String> createNewString(@Valid @RequestBody final CreateSkillRequest request) {
-        this.skillService.createNewSkill(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body("New Skill created.");
-    }
-
-    @GetMapping(version = "v1")
-    @Operation(summary = "Get paginated skills", description = "Retrieves a paginated list of skills.")
+    @GetMapping(value = "/details", version = "v1")
+    @Operation(summary = "Get paginated details", description = "Retrieves a paginated list of details.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Skills retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "details retrieved successfully",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = PageResponse.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "Forbidden - Admin role required",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<PageResponse<SkillResponse>> getAllSkills(
+    public ResponseEntity<PageResponse<EducationDetailResponse>> getAllDetails(
             @Parameter(description = "Zero-based page index") @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Number of items per page") @RequestParam(name = "size", defaultValue = "5") @Min(1) @Max(5) int size,
-            @Parameter(description = "Optional keyword to filter documents by file name") @RequestParam(name = "keyword", required = false) String keyword,
+            @Parameter(description = "Optional keyword to filter") @RequestParam(name = "keyword", required = false) String keyword,
             @Parameter(description = "Property field to sort by") @RequestParam(name = "sortBy", defaultValue = "name") String sortBy,
             @Parameter(description = "Sort direction: ASC or DESC") @RequestParam(name = "sortDirection", defaultValue = "ASC") String sortDirection
     ) {
-        return ResponseEntity.ok(this.skillService.getSkills(page, size, keyword, sortBy, sortDirection));
+        return ResponseEntity.ok(this.educationService.getEducationDetails(page, size, keyword, sortBy, sortDirection));
     }
 
-    @GetMapping(value = "/messages/{id}", version = "v1")
-    @Operation(summary = "Get skill by ID", description = "Retrieves full details of a specific skill.")
-    public ResponseEntity<SkillResponse> getSkillById(
-            @Parameter(description = "Unique ID of the Skill", required = true)
+    @GetMapping(value = "/detail/{id}", version = "v1")
+    @Operation(summary = "Get details by ID", description = "Retrieves full education details.")
+    public ResponseEntity<EducationDetailResponse> getEducationDetailById(
+            @Parameter(description = "Unique ID of the details", required = true)
             @PathVariable final Long id) {
-        return ResponseEntity.ok(this.skillService.getSkillById(id));
+        return ResponseEntity.ok(this.educationService.getEducationDetailById(id));
     }
 
-    @PatchMapping(value = "/{id}", version = "v1")
-    @Operation(summary = "Update skill", description = "Updates skill.")
-    public ResponseEntity<SkillResponse> updateMessageStatus(
-            @Parameter(description = "Unique ID of the skill", required = true)
+    @PatchMapping(value = "/detail/{id}", version = "v1")
+    public ResponseEntity<EducationDetailResponse> updateEducationDetails(
+            @Parameter(description = "Unique ID of the details", required = true)
             @PathVariable final Long id,
-            @Valid @RequestBody final UpdateSkillRequest request) {
-        return ResponseEntity.ok(this.skillService.updateSkill(id, request));
+            @Valid @RequestBody final UpdateEducationRequest request) {
+        return ResponseEntity.ok(this.educationService.updateEducationDetails(id, request));
     }
 
     @DeleteMapping(value = "/{id}", version = "v1")
-    @Operation(summary = "Delete a skill", description = "Permanently removes a skill record.")
-    public ResponseEntity<Void> deleteSkill(
-            @Parameter(description = "Unique ID of the skill to delete", required = true)
+    @Operation(summary = "Delete a education details", description = "Permanently removes a education detail record.")
+    public ResponseEntity<Void> deleteEducationDetail(
+            @Parameter(description = "Unique ID of the detail to delete", required = true)
             @PathVariable final Long id) {
-        this.skillService.deleteSkill(id);
+        this.educationService.deleteEducationDetail(id);
         return ResponseEntity.noContent().build();
     }
 }

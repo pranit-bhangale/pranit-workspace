@@ -1,10 +1,9 @@
 package com.pranit.workspace.portfolio.application.service;
 
-import com.pranit.workspace.portfolio.domain.dto.CreateSkillRequest;
-import com.pranit.workspace.portfolio.domain.dto.SkillResponse;
-import com.pranit.workspace.portfolio.domain.dto.UpdateSkillRequest;
-import com.pranit.workspace.portfolio.domain.enums.ProficiencyLevel;
-import com.pranit.workspace.portfolio.domain.enums.SkillCategory;
+import com.pranit.workspace.portfolio.domain.dto.CreateEducationRequest;
+import com.pranit.workspace.portfolio.domain.dto.EducationDetailResponse;
+import com.pranit.workspace.portfolio.domain.dto.UpdateEducationRequest;
+import com.pranit.workspace.portfolio.domain.enums.DegreeType;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -12,20 +11,18 @@ import jakarta.validation.constraints.Min;
 
 import java.util.List;
 
-public interface SkillService {
+public interface EducationService {
 
-    List<SkillCategory> getSkillCategories();
+    List<DegreeType> getDegrees();
 
-    List<ProficiencyLevel> getAllProficiencyLevel();
+    void createNewEducationDetail(@Valid CreateEducationRequest request);
 
-    void createNewSkill(@Valid CreateSkillRequest request);
+    EducationDetailResponse getEducationDetailById(Long id);
 
-    SkillResponse getSkillById(Long id);
-
-    PageResponse<SkillResponse> getSkills
+    PageResponse<EducationDetailResponse> getEducationDetails
             (@Min(0) int page, @Min(1) @Max(5) int size, String keyword, String sortBy, String sortDirection);
 
-    SkillResponse updateSkill(Long id, @Valid UpdateSkillRequest request);
+    EducationDetailResponse updateEducationDetails(Long id, @Valid UpdateEducationRequest request);
 
-    void deleteSkill(Long id);
+    void deleteEducationDetail(Long id);
 }

@@ -13,7 +13,7 @@ public class EducationSpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.isBlank()) return cb.conjunction();
             final String likePattern = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
-            return cb.or(cb.like(cb.lower(root.get("name")), likePattern));
+            return cb.or(cb.like(cb.lower(root.get("degreeTitle")), likePattern));
         };
     }
 }
