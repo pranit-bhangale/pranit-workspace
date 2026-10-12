@@ -1,5 +1,7 @@
 package com.pranit.workspace.portfolio.domain.dto;
 
+import com.pranit.workspace.portfolio.domain.entity.AcademicEvaluation;
+import com.pranit.workspace.portfolio.domain.entity.DatePeriod;
 import com.pranit.workspace.portfolio.domain.entity.Education;
 import com.pranit.workspace.portfolio.domain.enums.DegreeType;
 import lombok.Builder;
@@ -24,19 +26,22 @@ public record EducationDetailResponse(
         Integer displayOrder
 ) {
     public static EducationDetailResponse from(final Education education) {
+        final DatePeriod period = education.getPeriod();
+        final AcademicEvaluation evaluation = education.getEvaluation();
+
         return EducationDetailResponse.builder()
                 .id(education.getId())
                 .userId(education.getUserId())
                 .degreeTitle(education.getDegreeTitle())
                 .degreeType(education.getDegreeType())
                 .institution(education.getInstitution())
-                .startDate(education.getPeriod().getStartDate())
-                .endDate(education.getPeriod().getEndDate())
-                .periodDisplay(education.getPeriod().getPeriodDisplay())
-                .isCurrent(education.getPeriod().getIsCurrent())
-                .gradeValue(education.getEvaluation().getGradeValue())
-                .gradeScale(education.getEvaluation().getGradeScale())
-                .distinctionStatus(education.getEvaluation().getDistinctionStatus())
+                .startDate(period != null ? period.getStartDate() : null)
+                .endDate(period != null ? period.getEndDate() : null)
+                .periodDisplay(period != null ? period.getPeriodDisplay() : null)
+                .isCurrent(period != null ? period.getIsCurrent() : null)
+                .gradeValue(evaluation != null ? evaluation.getGradeValue() : null)
+                .gradeScale(evaluation != null ? evaluation.getGradeScale() : null)
+                .distinctionStatus(evaluation != null ? evaluation.getDistinctionStatus() : null)
                 .displayOrder(education.getDisplayOrder())
                 .build();
     }

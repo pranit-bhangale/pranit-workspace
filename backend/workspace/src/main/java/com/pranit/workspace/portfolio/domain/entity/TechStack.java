@@ -16,8 +16,8 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "projects", indexes = {
-        @Index(name = "idx_tech_stack_name", columnList = "name")
+@Table(name = "tech_stacks", indexes = {
+        @Index(name = "idx_tech_stacks_name", columnList = "name")
 })
 @Getter
 @Setter

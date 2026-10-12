@@ -18,6 +18,12 @@ public class Pagination {
     public static final int DEFAULT_PAGE_SIZE = 10;
     public static final int MAX_PAGE_SIZE = 25;
 
+    public static <E, D> PageResponse<D> paginate
+            (final JpaRepository<E, ?> repository, final Pageable pageable, final Function<E, D> mapper) {
+        final Page<E> result = repository.findAll(clamp(pageable));
+        return PageResponse.from(result, mapper);
+    }
+
     private static Pageable clamp(final Pageable pageable) {
         if (pageable == null || pageable.isUnpaged()) return PageRequest.of(0, DEFAULT_PAGE_SIZE);
         final int page = Math.max(0, pageable.getPageNumber());
@@ -26,18 +32,15 @@ public class Pagination {
     }
 
     public static <E, D> PageResponse<D> paginate
-            (final JpaRepository<E, ?> repository, final Pageable pageable, final Function<E, D> mapper) {
-        final Page<E> result = repository.findAll(clamp(pageable));
-        return PageResponse.from(result, mapper);
-    }
-
-    public static <E, D> PageResponse<D> paginate
             (final JpaSpecificationExecutor<E> repository, final Specification<E> specification,
              final int page, final int size, final String sortBy,
              final String sortDirection, final Function<E, D> mapper) {
         final Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
                 ? Sort.Direction.ASC : Sort.Direction.DESC;
-        final Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        final String safeSortBy = sortBy.trim();
+        final int safePage = Math.max(0, page);
+        final int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        final Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy));
         final Page<E> result = repository.findAll(specification, pageable);
         return PageResponse.from(result, mapper);
     }

@@ -10,18 +10,36 @@ import java.time.Instant;
 @Builder
 public record ContactMessageResponse(
         Long id,
-        ContactSender sender,
+        ContactSenderResponse sender,
         String messageContent,
         MessageStatus status,
         Instant createdAt
 ) {
+    
     public static ContactMessageResponse from(final ContactMessage message) {
+        final ContactSender sender = message.getSender();
+        final ContactSenderResponse senderResponse = sender != null
+                ? ContactSenderResponse.builder()
+                .name(sender.getName())
+                .email(sender.getEmail())
+                .phone(sender.getPhone())
+                .build()
+                : null;
+
         return ContactMessageResponse.builder()
                 .id(message.getId())
-                .sender(message.getSender())
+                .sender(senderResponse)
                 .messageContent(message.getMessageContent())
                 .status(message.getStatus())
                 .createdAt(message.getCreatedAt())
                 .build();
+    }
+
+    @Builder
+    public record ContactSenderResponse(
+            String name,
+            String email,
+            String phone
+    ) {
     }
 }

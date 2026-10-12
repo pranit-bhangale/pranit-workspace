@@ -36,6 +36,7 @@ public class TagServiceImpl implements TagService {
                 .name(request.name())
                 .color(request.color())
                 .build();
+        this.tagRepository.save(tag);
     }
 
     @Override

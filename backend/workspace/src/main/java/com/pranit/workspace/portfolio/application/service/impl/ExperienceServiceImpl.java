@@ -1,6 +1,5 @@
 package com.pranit.workspace.portfolio.application.service.impl;
 
-import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.ExperienceRepository;
 import com.pranit.workspace.portfolio.application.repository.TechStackRepository;
 import com.pranit.workspace.portfolio.application.service.ExperienceService;
@@ -18,6 +17,7 @@ import com.pranit.workspace.portfolio.domain.enums.EmploymentType;
 import com.pranit.workspace.portfolio.domain.enums.WorkplaceType;
 import com.pranit.workspace.shared.exception.ResourceNotFoundException;
 import com.pranit.workspace.shared.helper.Pagination;
+import com.pranit.workspace.shared.helper.SecurityContext;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -51,7 +51,7 @@ public class ExperienceServiceImpl implements ExperienceService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void createNewTechStack(final CreateTechRequest request) {
         final TechStack techStack = TechStack.builder()
-                .name(request.name())
+                .name(request.name().trim())
                 .build();
         this.techStackRepository.save(techStack);
     }
@@ -78,7 +78,7 @@ public class ExperienceServiceImpl implements ExperienceService {
     @Transactional(propagation = Propagation.REQUIRED)
     public TechStackResponse updateTechStack(final Long id, final UpdateTechRequest request) {
         final TechStack techStack = validateAndFetchTechStackById(id);
-        if (request.name() != null) techStack.setName(request.name());
+        if (request.name() != null && !request.name().isBlank()) techStack.setName(request.name().trim());
         return TechStackResponse.from(techStack);
     }
 
@@ -99,18 +99,22 @@ public class ExperienceServiceImpl implements ExperienceService {
                 .periodDisplay(request.periodDisplay())
                 .isCurrent(request.isCurrent())
                 .build();
-        final List<Long> techStackIds = request.techStackIds()
-                .stream()
-                .distinct()
-                .toList();
-        final List<TechStack> techStacks = this.techStackRepository.findAllById(techStackIds);
-        if (techStacks.size() != techStackIds.size()) {
-            throw new ResourceNotFoundException("One or more tech stacks were not found");
+
+        final List<TechStack> techStacks;
+        if (request.techStackIds() != null && !request.techStackIds().isEmpty()) {
+            final List<Long> distinctIds = request.techStackIds().stream().distinct().toList();
+            techStacks = this.techStackRepository.findAllById(distinctIds);
+            if (techStacks.size() != distinctIds.size()) {
+                throw new ResourceNotFoundException("One or more tech stacks were not found");
+            }
+        } else {
+            techStacks = List.of();
         }
+
         final Experience experience = Experience.builder()
                 .userId(currentUserId)
-                .company(request.company())
-                .role(request.role())
+                .company(request.company().trim())
+                .role(request.role().trim())
                 .employmentType(request.employmentType())
                 .workplaceType(request.workplaceType())
                 .period(period)
@@ -118,22 +122,19 @@ public class ExperienceServiceImpl implements ExperienceService {
                 .techStacks(new ArrayList<>(techStacks))
                 .displayOrder(request.displayOrder())
                 .build();
+
+        this.experienceRepository.save(experience);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public ExperienceResponse getExperienceById(final Long id) {
-        final Experience experience = validateAndFetchExperienceWithTechStackById(id);
+        final Experience experience = validateAndFetchExperienceById(id);
         return ExperienceResponse.from(experience);
     }
 
-    private Experience validateAndFetchExperienceWithTechStackById(final Long id) {
-        return this.experienceRepository.findWithTechStacksById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
-    }
-
     private Experience validateAndFetchExperienceById(final Long id) {
-        return this.experienceRepository.findById(id)
+        return this.experienceRepository.findWithTechStacksById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
     }
 
@@ -151,26 +152,29 @@ public class ExperienceServiceImpl implements ExperienceService {
     @Transactional(propagation = Propagation.REQUIRED)
     public ExperienceResponse updateExperienceById(final Long id, final UpdateExperienceRequest request) {
         final Experience experience = validateAndFetchExperienceById(id);
-        if (request.company() != null) experience.setCompany(request.company());
-        if (request.role() != null) experience.setRole(request.role());
+        if (request.company() != null && !request.company().isBlank()) experience.setCompany(request.company().trim());
+        if (request.role() != null && !request.role().isBlank()) experience.setRole(request.role().trim());
         if (request.employmentType() != null) experience.setEmploymentType(request.employmentType());
         if (request.workplaceType() != null) experience.setWorkplaceType(request.workplaceType());
         if (request.descriptionMarkdown() != null) experience.setDescriptionMarkdown(request.descriptionMarkdown());
         if (request.displayOrder() != null) experience.setDisplayOrder(request.displayOrder());
         if (request.startDate() != null || request.endDate() != null
                 || request.periodDisplay() != null || request.isCurrent() != null) {
-            final DatePeriod period = experience.getPeriod();
+            DatePeriod period = experience.getPeriod();
             if (request.startDate() != null) period.setStartDate(request.startDate());
             if (request.endDate() != null) period.setEndDate(request.endDate());
             if (request.periodDisplay() != null) period.setPeriodDisplay(request.periodDisplay());
             if (request.isCurrent() != null) period.setIsCurrent(request.isCurrent());
             experience.setPeriod(period);
         }
-        if (request.techStacks() != null) {
+        if (request.techStackIds() != null) {
+            final List<Long> distinctIds = request.techStackIds().stream().distinct().toList();
+            final List<TechStack> techStacks = this.techStackRepository.findAllById(distinctIds);
+            if (techStacks.size() != distinctIds.size()) {
+                throw new ResourceNotFoundException("One or more tech stacks were not found");
+            }
             experience.getTechStacks().clear();
-            request.techStacks().stream()
-                    .map(TechStackResponse::toEntity)
-                    .forEach(experience.getTechStacks()::add);
+            experience.getTechStacks().addAll(techStacks);
         }
         return ExperienceResponse.from(experience);
     }

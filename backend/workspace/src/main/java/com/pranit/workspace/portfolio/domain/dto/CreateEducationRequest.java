@@ -1,6 +1,7 @@
 package com.pranit.workspace.portfolio.domain.dto;
 
 import com.pranit.workspace.portfolio.domain.enums.DegreeType;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -11,7 +12,7 @@ import java.time.LocalDate;
 public record CreateEducationRequest(
 
         @NotBlank(message = "Degree title is required")
-        @Size(max = 150, message = "Degree title must not exceed 150 characters")
+        @Size(max = 200, message = "Degree title must not exceed 200 characters")
         String degreeTitle,
 
         @NotNull(message = "Degree type is required")
@@ -26,6 +27,7 @@ public record CreateEducationRequest(
 
         LocalDate endDate,
 
+        @NotBlank(message = "Period display is required")
         @Size(max = 100, message = "Period display must not exceed 100 characters")
         String periodDisplay,
 
@@ -45,4 +47,14 @@ public record CreateEducationRequest(
         @PositiveOrZero(message = "Display order must be zero or greater")
         Integer displayOrder
 ) {
+
+    @AssertTrue(message = "End date must not be before start date")
+    public boolean isEndDateValid() {
+        return startDate == null || endDate == null || !endDate.isBefore(startDate);
+    }
+
+    @AssertTrue(message = "End date must be null for current education")
+    public boolean isCurrentEducationValid() {
+        return !Boolean.TRUE.equals(isCurrent) || endDate == null;
+    }
 }

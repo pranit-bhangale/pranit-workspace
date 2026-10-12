@@ -2,7 +2,6 @@ package com.pranit.workspace.portfolio.domain.dto;
 
 import com.pranit.workspace.portfolio.domain.enums.EmploymentType;
 import com.pranit.workspace.portfolio.domain.enums.WorkplaceType;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -23,7 +22,7 @@ public record UpdateExperienceRequest(
         String periodDisplay,
         Boolean isCurrent,
         String descriptionMarkdown,
-        List<@Valid TechStackResponse> techStacks,
+        List<Long> techStackIds,
         @PositiveOrZero(message = "Display order must be zero or greater")
         Integer displayOrder
 ) {

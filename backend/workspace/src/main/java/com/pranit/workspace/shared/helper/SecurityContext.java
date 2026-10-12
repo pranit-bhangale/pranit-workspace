@@ -1,4 +1,4 @@
-package com.pranit.workspace.auth.security.helper;
+package com.pranit.workspace.shared.helper;
 
 import com.pranit.workspace.auth.domain.model.UserDetail;
 import com.pranit.workspace.auth.exception.UnauthorizedException;

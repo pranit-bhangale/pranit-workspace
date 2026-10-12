@@ -1,6 +1,5 @@
 package com.pranit.workspace.portfolio.application.service.impl;
 
-import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.SkillRepository;
 import com.pranit.workspace.portfolio.application.service.SkillService;
 import com.pranit.workspace.portfolio.application.specification.EntitySpecification;
@@ -12,6 +11,7 @@ import com.pranit.workspace.portfolio.domain.enums.ProficiencyLevel;
 import com.pranit.workspace.portfolio.domain.enums.SkillCategory;
 import com.pranit.workspace.shared.exception.ResourceNotFoundException;
 import com.pranit.workspace.shared.helper.Pagination;
+import com.pranit.workspace.shared.helper.SecurityContext;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class SkillServiceImpl implements SkillService {
         final UUID currentUserId = SecurityContext.getCurrentUserId();
         final Skill skill = Skill.builder()
                 .userId(currentUserId)
-                .name(request.name())
+                .name(request.name().trim())
                 .category(request.category())
                 .proficiencyLevel(request.proficiencyLevel())
                 .displayOrder(request.displayOrder())
@@ -80,7 +80,7 @@ public class SkillServiceImpl implements SkillService {
     @Transactional(propagation = Propagation.REQUIRED)
     public SkillResponse updateSkill(final Long id, final UpdateSkillRequest request) {
         final Skill skill = validateAndFetchSkillById(id);
-        if (request.name() != null && !request.name().isEmpty()) skill.setName(request.name());
+        if (request.name() != null && !request.name().isBlank()) skill.setName(request.name().trim());
         if (request.category() != null) skill.setCategory(request.category());
         if (request.proficiencyLevel() != null) skill.setProficiencyLevel(request.proficiencyLevel());
         if (request.displayOrder() != null) skill.setDisplayOrder(request.displayOrder());

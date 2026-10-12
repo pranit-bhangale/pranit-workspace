@@ -1,6 +1,5 @@
 package com.pranit.workspace.portfolio.application.service.impl;
 
-import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.CodingAchievementRepository;
 import com.pranit.workspace.portfolio.application.service.CodingAchievementService;
 import com.pranit.workspace.portfolio.domain.dto.CodingAchievementResponse;
@@ -10,6 +9,7 @@ import com.pranit.workspace.portfolio.domain.entity.CodingAchievement;
 import com.pranit.workspace.portfolio.domain.enums.CodingPlatform;
 import com.pranit.workspace.shared.exception.ResourceNotFoundException;
 import com.pranit.workspace.shared.helper.Pagination;
+import com.pranit.workspace.shared.helper.SecurityContext;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +39,7 @@ public class CodingAchievementServiceImpl implements CodingAchievementService {
                 .userId(currentUserId)
                 .platform(request.platform())
                 .problemsSolved(request.problemsSolved())
-                .profileLink(request.profileLink())
+                .profileLink(request.profileLink().trim())
                 .displayOrder(request.displayOrder())
                 .build();
         this.codingAchievementRepository.save(achievement);
@@ -70,7 +70,9 @@ public class CodingAchievementServiceImpl implements CodingAchievementService {
         final CodingAchievement achievement = validateAndFetchAchievementById(id);
         if (request.platform() != null) achievement.setPlatform(request.platform());
         if (request.problemsSolved() != null) achievement.setProblemsSolved(request.problemsSolved());
-        if (request.profileLink() != null) achievement.setProfileLink(request.profileLink());
+        if (request.profileLink() != null && !request.profileLink().isBlank())
+            achievement.setProfileLink(request.profileLink().trim());
+
         if (request.displayOrder() != null) achievement.setDisplayOrder(request.displayOrder());
         return CodingAchievementResponse.from(achievement);
     }

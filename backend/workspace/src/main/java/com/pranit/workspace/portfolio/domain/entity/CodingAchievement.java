@@ -48,7 +48,7 @@ public class CodingAchievement extends Auditable {
     @Column(name = "problems_solved", nullable = false)
     private Integer problemsSolved;
     
-    @Column(name = "profile_link", length = 500)
+    @Column(name = "profile_link", length = 2048)
     private String profileLink;
 
     @Column(name = "display_order", nullable = false)

@@ -27,6 +27,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import org.hibernate.annotations.BatchSize;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -70,6 +72,7 @@ public class Project extends Auditable {
     @Embedded
     private ProjectAssets assets;
 
+    @BatchSize(size = 25)
     @ManyToMany
     @JoinTable(
             name = "project_tech_stacks",
@@ -87,11 +90,20 @@ public class Project extends Auditable {
     @Builder.Default
     private List<TechStack> techStacks = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(
-            name = "project_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_feature_project")
+    @BatchSize(size = 25)
+    @ManyToMany
+    @JoinTable(
+            name = "project_features",
+            joinColumns = @JoinColumn(
+                    name = "project_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_project_feature")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "feature_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_feature_project")
+            )
     )
     @Builder.Default
     private List<Feature> features = new ArrayList<>();
@@ -100,6 +112,7 @@ public class Project extends Auditable {
     @Builder.Default
     private Boolean isFeatured = false;
 
+    @BatchSize(size = 25)
     @ManyToMany
     @JoinTable(
             name = "project_tags",

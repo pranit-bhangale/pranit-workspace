@@ -28,7 +28,7 @@ public class DatePeriod {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "period_display", nullable = false, length = 50)
+    @Column(name = "period_display", nullable = false, length = 100)
     private String periodDisplay;
 
     @Column(name = "is_current", nullable = false)

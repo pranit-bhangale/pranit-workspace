@@ -80,7 +80,7 @@ public class ContactMessageController {
     public ResponseEntity<PageResponse<ContactMessageResponse>> getAllMessages(
             @Parameter(description = "Zero-based page index") @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Number of items per page") @RequestParam(name = "size", defaultValue = "5") @Min(1) @Max(5) int size,
-            @Parameter(description = "Optional keyword to filter documents by file name") @RequestParam(name = "keyword", required = false) String keyword,
+            @Parameter(description = "Optional keyword to filter contact messages") @RequestParam(name = "keyword", required = false) String keyword,
             @Parameter(description = "Filter by message status") @RequestParam(name = "status", required = false) final MessageStatus status,
             @Parameter(description = "Property field to sort by") @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @Parameter(description = "Sort direction: ASC or DESC") @RequestParam(name = "sortDirection", defaultValue = "ASC") String sortDirection

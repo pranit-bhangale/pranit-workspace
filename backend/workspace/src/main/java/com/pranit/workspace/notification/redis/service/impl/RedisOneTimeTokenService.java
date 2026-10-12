@@ -1,6 +1,6 @@
 package com.pranit.workspace.notification.redis.service.impl;
 
-import com.pranit.workspace.shared.constant.Redis;
+import com.pranit.workspace.notification.constant.Redis;
 import com.pranit.workspace.shared.helper.Generate;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

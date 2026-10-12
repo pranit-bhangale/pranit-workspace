@@ -58,6 +58,7 @@ public class ContactMessageServiceImpl implements ContactMessageService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public PageResponse<ContactMessageResponse> getAllMessages
             (final int page, final int size, final String keyword, final MessageStatus status,
              final String sortBy, final String sortDirection) {

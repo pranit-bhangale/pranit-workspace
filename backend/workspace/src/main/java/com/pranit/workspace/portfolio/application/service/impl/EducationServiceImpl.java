@@ -1,6 +1,5 @@
 package com.pranit.workspace.portfolio.application.service.impl;
 
-import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.EducationRepository;
 import com.pranit.workspace.portfolio.application.service.EducationService;
 import com.pranit.workspace.portfolio.application.specification.EntitySpecification;
@@ -14,6 +13,7 @@ import com.pranit.workspace.portfolio.domain.enums.DegreeType;
 import com.pranit.workspace.shared.exception.InvalidRequestException;
 import com.pranit.workspace.shared.exception.ResourceNotFoundException;
 import com.pranit.workspace.shared.helper.Pagination;
+import com.pranit.workspace.shared.helper.SecurityContext;
 import com.pranit.workspace.shared.wrapper.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -38,26 +38,26 @@ public class EducationServiceImpl implements EducationService {
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void createNewEducationDetail(final CreateEducationRequest request) {
-        if (this.educationRepository.existsByDegreeTitle(request.degreeTitle())) {
+        if (this.educationRepository.existsByDegreeTitle(request.degreeTitle().trim())) {
             throw new InvalidRequestException("Degree Title already exists");
         }
         final UUID userId = SecurityContext.getCurrentUserId();
         final DatePeriod period = DatePeriod.builder()
                 .startDate(request.startDate())
                 .endDate(request.endDate())
-                .periodDisplay(request.periodDisplay())
+                .periodDisplay(request.periodDisplay().trim())
                 .isCurrent(request.isCurrent())
                 .build();
         final AcademicEvaluation evaluation = AcademicEvaluation.builder()
-                .gradeValue(request.gradeValue())
-                .gradeScale(request.gradeScale())
-                .distinctionStatus(request.distinctionStatus())
+                .gradeValue(request.gradeValue() != null ? request.gradeValue().trim() : null)
+                .gradeScale(request.gradeScale() != null ? request.gradeScale().trim() : null)
+                .distinctionStatus(request.distinctionStatus() != null ? request.distinctionStatus().trim() : null)
                 .build();
         final Education education = Education.builder()
                 .userId(userId)
-                .degreeTitle(request.degreeTitle())
+                .degreeTitle(request.degreeTitle().trim())
                 .degreeType(request.degreeType())
-                .institution(request.institution())
+                .institution(request.institution().trim())
                 .period(period)
                 .evaluation(evaluation)
                 .displayOrder(request.displayOrder())
@@ -91,25 +91,34 @@ public class EducationServiceImpl implements EducationService {
     @Transactional(propagation = Propagation.REQUIRED)
     public EducationDetailResponse updateEducationDetails(final Long id, final UpdateEducationRequest request) {
         final Education education = validateAndFetchEducationDetailById(id);
-        if (request.degreeTitle() != null) education.setDegreeTitle(request.degreeTitle());
+        if (request.degreeTitle() != null && !request.degreeTitle().isBlank()) {
+            final String newTitle = request.degreeTitle().trim();
+            if (!newTitle.equalsIgnoreCase(education.getDegreeTitle()) &&
+                    this.educationRepository.existsByDegreeTitle(newTitle)) {
+                throw new InvalidRequestException("Degree Title already exists");
+            }
+            education.setDegreeTitle(newTitle);
+        }
         if (request.degreeType() != null) education.setDegreeType(request.degreeType());
-        if (request.institution() != null) education.setInstitution(request.institution());
+        if (request.institution() != null && !request.institution().isBlank())
+            education.setInstitution(request.institution().trim());
         if (request.displayOrder() != null) education.setDisplayOrder(request.displayOrder());
         if (request.startDate() != null || request.endDate() != null
                 || request.periodDisplay() != null || request.isCurrent() != null) {
-            final DatePeriod period = education.getPeriod();
+            DatePeriod period = education.getPeriod();
             if (request.startDate() != null) period.setStartDate(request.startDate());
             if (request.endDate() != null) period.setEndDate(request.endDate());
-            if (request.periodDisplay() != null) period.setPeriodDisplay(request.periodDisplay());
+            if (request.periodDisplay() != null) period.setPeriodDisplay(request.periodDisplay().trim());
             if (request.isCurrent() != null) period.setIsCurrent(request.isCurrent());
             education.setPeriod(period);
         }
         if (request.gradeValue() != null || request.gradeScale() != null
                 || request.distinctionStatus() != null) {
-            final AcademicEvaluation evaluation = education.getEvaluation();
-            if (request.gradeValue() != null) evaluation.setGradeValue(request.gradeValue());
-            if (request.gradeScale() != null) evaluation.setGradeScale(request.gradeScale());
-            if (request.distinctionStatus() != null) evaluation.setDistinctionStatus(request.distinctionStatus());
+            AcademicEvaluation evaluation = education.getEvaluation();
+            if (request.gradeValue() != null) evaluation.setGradeValue(request.gradeValue().trim());
+            if (request.gradeScale() != null) evaluation.setGradeScale(request.gradeScale().trim());
+            if (request.distinctionStatus() != null)
+                evaluation.setDistinctionStatus(request.distinctionStatus().trim());
             education.setEvaluation(evaluation);
         }
         return EducationDetailResponse.from(education);

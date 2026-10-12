@@ -7,14 +7,14 @@ import jakarta.validation.constraints.Size;
 
 public record CreateFeatureRequest(
 
-        @NotBlank(message = "Tag name is required")
-        @Size(max = 50, message = "Tag name must not exceed 50 characters")
+        @NotBlank(message = "Feature name is required")
+        @Size(max = 100, message = "Feature name must not exceed 100 characters")
         String name,
 
-        @NotBlank(message = "Tag description is required")
+        @NotBlank(message = "Feature description is required")
         String description,
 
-        @NotNull(message = "Tag color is required")
+        @NotNull(message = "Feature color is required")
         Color color
 ) {
 }

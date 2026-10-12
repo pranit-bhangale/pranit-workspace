@@ -25,6 +25,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import org.hibernate.annotations.BatchSize;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -68,6 +70,7 @@ public class Experience extends Auditable {
     @Column(name = "description_markdown", columnDefinition = "TEXT")
     private String descriptionMarkdown;
 
+    @BatchSize(size = 25)
     @ManyToMany
     @JoinTable(
             name = "experience_tech_stacks",

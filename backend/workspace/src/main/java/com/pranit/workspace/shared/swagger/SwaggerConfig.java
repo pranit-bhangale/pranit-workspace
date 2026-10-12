@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Global OpenAPI / Swagger configuration for Pranit Portfolio Application.
  * Configures API metadata, zero-trust authentication schemes (HttpOnly Cookie & Bearer JWT),
- * server environments, and module tagging for all 14 controller endpoints.
+ * server environments, and module tagging for all 15 controller endpoints.
  */
 @Configuration
 @OpenAPIDefinition(

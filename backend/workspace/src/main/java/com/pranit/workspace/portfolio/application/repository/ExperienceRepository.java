@@ -13,4 +13,10 @@ public interface ExperienceRepository extends JpaRepository<Experience, Long>, J
 
     @EntityGraph(attributePaths = "techStacks")
     Optional<Experience> findWithTechStacksById(Long id);
+
+    @Override
+    @EntityGraph(attributePaths = "techStacks")
+    org.springframework.data.domain.Page<Experience> findAll(
+            org.springframework.data.jpa.domain.Specification<Experience> spec,
+            org.springframework.data.domain.Pageable pageable);
 }
