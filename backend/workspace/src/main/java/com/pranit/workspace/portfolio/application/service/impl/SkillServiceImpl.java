@@ -3,7 +3,7 @@ package com.pranit.workspace.portfolio.application.service.impl;
 import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.SkillRepository;
 import com.pranit.workspace.portfolio.application.service.SkillService;
-import com.pranit.workspace.portfolio.application.specification.SkillSpecification;
+import com.pranit.workspace.portfolio.application.specification.EntitySpecification;
 import com.pranit.workspace.portfolio.domain.dto.CreateSkillRequest;
 import com.pranit.workspace.portfolio.domain.dto.SkillResponse;
 import com.pranit.workspace.portfolio.domain.dto.UpdateSkillRequest;
@@ -71,7 +71,7 @@ public class SkillServiceImpl implements SkillService {
     public PageResponse<SkillResponse> getSkills
             (final int page, final int size, final String keyword,
              final String sortBy, final String sortDirection) {
-        final Specification<Skill> specification = SkillSpecification.searchKeyword(keyword);
+        final Specification<Skill> specification = EntitySpecification.searchSkillKeyword(keyword);
         return Pagination.paginate
                 (this.skillRepository, specification, page, size, sortBy, sortDirection, SkillResponse::from);
     }

@@ -2,7 +2,7 @@ package com.pranit.workspace.portfolio.application.service.impl;
 
 import com.pranit.workspace.portfolio.application.repository.ContactMessageRepository;
 import com.pranit.workspace.portfolio.application.service.ContactMessageService;
-import com.pranit.workspace.portfolio.application.specification.MessageSpecification;
+import com.pranit.workspace.portfolio.application.specification.EntitySpecification;
 import com.pranit.workspace.portfolio.domain.dto.ContactMessageRequest;
 import com.pranit.workspace.portfolio.domain.dto.ContactMessageResponse;
 import com.pranit.workspace.portfolio.domain.dto.ContactStatusUpdateRequest;
@@ -62,8 +62,8 @@ public class ContactMessageServiceImpl implements ContactMessageService {
             (final int page, final int size, final String keyword, final MessageStatus status,
              final String sortBy, final String sortDirection) {
         final Specification<ContactMessage> specification = Specification
-                .where(MessageSpecification.searchKeyword(keyword))
-                .and(MessageSpecification.hasStatus(status));
+                .where(EntitySpecification.searchContactMessageKeyword(keyword))
+                .and(EntitySpecification.hasStatus(status));
         return Pagination.paginate
                 (this.contactMessageRepository, specification, page, size, sortBy, sortDirection, ContactMessageResponse::from);
     }

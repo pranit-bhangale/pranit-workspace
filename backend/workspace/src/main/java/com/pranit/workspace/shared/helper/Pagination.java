@@ -18,7 +18,7 @@ public class Pagination {
     public static final int DEFAULT_PAGE_SIZE = 20;
     public static final int MAX_PAGE_SIZE = 100;
 
-    public static Pageable clamp(final Pageable pageable) {
+    private static Pageable clamp(final Pageable pageable) {
         if (pageable == null || pageable.isUnpaged()) return PageRequest.of(0, DEFAULT_PAGE_SIZE);
         final int page = Math.max(0, pageable.getPageNumber());
         final int size = Math.clamp(pageable.getPageSize(), 1, MAX_PAGE_SIZE);

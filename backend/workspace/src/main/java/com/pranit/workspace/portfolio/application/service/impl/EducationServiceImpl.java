@@ -3,7 +3,7 @@ package com.pranit.workspace.portfolio.application.service.impl;
 import com.pranit.workspace.auth.security.helper.SecurityContext;
 import com.pranit.workspace.portfolio.application.repository.EducationRepository;
 import com.pranit.workspace.portfolio.application.service.EducationService;
-import com.pranit.workspace.portfolio.application.specification.EducationSpecification;
+import com.pranit.workspace.portfolio.application.specification.EntitySpecification;
 import com.pranit.workspace.portfolio.domain.dto.CreateEducationRequest;
 import com.pranit.workspace.portfolio.domain.dto.EducationDetailResponse;
 import com.pranit.workspace.portfolio.domain.dto.UpdateEducationRequest;
@@ -82,7 +82,7 @@ public class EducationServiceImpl implements EducationService {
     public PageResponse<EducationDetailResponse> getEducationDetails
             (final int page, final int size, final String keyword,
              final String sortBy, final String sortDirection) {
-        final Specification<Education> specification = EducationSpecification.searchKeyword(keyword);
+        final Specification<Education> specification = EntitySpecification.searchEducationKeyword(keyword);
         return Pagination.paginate
                 (this.educationRepository, specification, page, size, sortBy, sortDirection, EducationDetailResponse::from);
     }
