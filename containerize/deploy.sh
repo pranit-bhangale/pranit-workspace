@@ -104,6 +104,11 @@ CLI_COMPOSE_FILES=()
 CLI_PROFILES=()
 CLI_ENV_FILE=""
 CLI_PROJECT_NAME=""
+CLI_REGISTRY=""
+CLI_TAGS=()
+CLI_NO_BUILD=0
+CLI_DRY_RUN=0
+CLI_PUSH=0
 MAX_WAIT=120
 INTERVAL=3
 COMMAND=""
@@ -147,6 +152,39 @@ parse_cli_args() {
                     error "--project-name requires a project name argument"
                     exit 1
                 fi
+                ;;
+            -r|--registry)
+                if [[ $# -ge 2 && "$2" != -* ]]; then
+                    CLI_REGISTRY="$2"
+                    shift 2
+                else
+                    error "--registry requires a registry URL or namespace (e.g., docker.io/user, ghcr.io/org)"
+                    exit 1
+                fi
+                ;;
+            -t|--tag)
+                if [[ $# -ge 2 && "$2" != -* ]]; then
+                    IFS=',' read -ra split_tags <<< "$2"
+                    for t in "${split_tags[@]}"; do
+                        [[ -n "$t" ]] && CLI_TAGS+=("$t")
+                    done
+                    shift 2
+                else
+                    error "--tag requires an image tag argument (e.g., v1.0.0, latest)"
+                    exit 1
+                fi
+                ;;
+            --no-build)
+                CLI_NO_BUILD=1
+                shift 1
+                ;;
+            --dry-run)
+                CLI_DRY_RUN=1
+                shift 1
+                ;;
+            --push)
+                CLI_PUSH=1
+                shift 1
                 ;;
             --max-wait)
                 if [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]]; then
@@ -481,7 +519,7 @@ check_prerequisites() {
     fi
 
     if [[ "${#ACTIVE_COMPOSE_FILES[@]}" -gt 0 ]]; then
-        success "Compose file(s) loaded: ${ACTIVE_COMPOSE_FILES[*]}"
+        success "Compose file loaded: ${ACTIVE_COMPOSE_FILES[*]}"
     else
         error "No Docker Compose file found (checked docker-compose.yaml, docker-compose.yml)"
         printf 'Specify a file with: %s -f <compose-file>\n' "$SCRIPT_NAME" >&2
@@ -867,12 +905,10 @@ wait_for_services() {
                         esac
                         ;;
                     created|restarting)
-                        # Pending states: container is initializing or waiting for dependent network/db
                         svc_pending=1
                         ;;
                     exited)
                         if [[ "$exit_code" -eq 0 ]]; then
-                            # One-off or migration/seed task that completed cleanly
                             svc_completed=1
                         else
                             svc_failed=1
@@ -1012,9 +1048,247 @@ show_endpoints() {
     done
 }
 
-# ------------------------------------------------------------------------------
-# Safe Environment Cleanup (Non-destructive to Host/External Resources)
-# ------------------------------------------------------------------------------
+detect_registry() {
+    if [[ -n "${CLI_REGISTRY:-}" ]]; then
+        printf '%s' "${CLI_REGISTRY%/}"
+        return 0
+    fi
+    if [[ -n "${DOCKER_REGISTRY:-}" ]]; then
+        printf '%s' "${DOCKER_REGISTRY%/}"
+        return 0
+    fi
+    if [[ -n "${REGISTRY:-}" ]]; then
+        printf '%s' "${REGISTRY%/}"
+        return 0
+    fi
+    return 1
+}
+
+detect_target_tags() {
+    if [[ "${#CLI_TAGS[@]}" -gt 0 ]]; then
+        for t in "${CLI_TAGS[@]}"; do
+            printf '%s\n' "$t"
+        done
+        return 0
+    fi
+    if [[ -n "${IMAGE_TAG:-}" ]]; then
+        printf '%s\n' "$IMAGE_TAG"
+        return 0
+    fi
+    if [[ -n "${DOCKER_TAG:-}" ]]; then
+        printf '%s\n' "$DOCKER_TAG"
+        return 0
+    fi
+    local git_sha=""
+    if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git_sha="$(git rev-parse --short HEAD 2>/dev/null || true)"
+    fi
+    if [[ -n "$git_sha" ]]; then
+        printf '%s\n' "$git_sha"
+        printf 'latest\n'
+        return 0
+    fi
+    printf 'latest\n'
+}
+
+push_service_image() {
+    local service="$1"
+    local registry="$2"
+    local tags_str="$3"
+    local dry_run="${4:-0}"
+    local no_build="${5:-0}"
+
+    local local_image
+    local_image="$(get_service_image "$service")"
+
+    local image_exists=0
+    if docker image inspect "$local_image" >/dev/null 2>&1; then
+        image_exists=1
+    fi
+
+    if is_service_buildable "$service"; then
+        local changed=0
+        if has_code_changed "$service"; then
+            changed=1
+        fi
+
+        if [[ "$image_exists" -eq 0 || ("$no_build" -eq 0 && "$changed" -eq 1) ]]; then
+            minor_section "🔨 Building image for ${service} before push..."
+            if [[ "$dry_run" -eq 1 ]]; then
+                printf '[dry-run] Would build image for service: %s\n' "$service"
+            else
+                "${COMPOSE[@]}" build "$service"
+                save_service_hash "$service"
+                local_image="$(get_service_image "$service")"
+            fi
+        fi
+    elif [[ "$image_exists" -eq 0 ]]; then
+        error "Image '$local_image' for service '$service' does not exist locally. Build or pull it first."
+        return 1
+    fi
+
+    local image_without_tag="${local_image%%:*}"
+    local target_repo=""
+
+    if [[ -n "$registry" ]]; then
+        local clean_img_name
+        clean_img_name="$(basename -- "$image_without_tag")"
+        target_repo="${registry}/${clean_img_name}"
+    else
+        if [[ "$image_without_tag" =~ [/] ]]; then
+            target_repo="$image_without_tag"
+        else
+            error "Cannot push '${local_image}': no remote registry specified."
+            printf 'Provide a registry with: %s push %s -r <registry> (e.g. -r ghcr.io/org or -r docker.io/username)\n' "$SCRIPT_NAME" "$service" >&2
+            printf 'Or define DOCKER_REGISTRY in your .env file.\n' >&2
+            return 1
+        fi
+    fi
+
+    local tag_list=()
+    while IFS= read -r t; do
+        [[ -n "$t" ]] && tag_list+=("$t")
+    done <<< "$tags_str"
+
+    major_section "🚀 Pushing ${service} -> ${target_repo} (${tag_list[*]})"
+
+    for tag in "${tag_list[@]}"; do
+        local remote_image="${target_repo}:${tag}"
+
+        if [[ "$dry_run" -eq 1 ]]; then
+            printf '[dry-run] Would tag:  %s -> %s\n' "$local_image" "$remote_image"
+            printf '[dry-run] Would push: %s\n' "$remote_image"
+            continue
+        fi
+
+        if [[ "$local_image" != "$remote_image" ]]; then
+            if ! docker tag "$local_image" "$remote_image"; then
+                error "Failed to tag '$local_image' as '$remote_image'"
+                return 1
+            fi
+            success "Tagged: ${local_image} -> ${remote_image}"
+        fi
+
+        printf '%b\n' "${CYAN}Uploading ${remote_image} to Docker registry...${NC}"
+        if docker push "$remote_image"; then
+            local digest
+            digest="$(docker inspect --format='{{index .RepoDigests 0}}' "$remote_image" 2>/dev/null || true)"
+            success "Successfully pushed: ${remote_image}"
+            if [[ -n "$digest" ]]; then
+                printf '  • %bDigest:%b %s\n' "${GREEN}" "${NC}" "$digest"
+            fi
+        else
+            error "Failed to push '${remote_image}'."
+            local reg_domain="${target_repo%%/*}"
+            local login_domain=""
+            if [[ -n "$reg_domain" && "$reg_domain" =~ [.:] ]]; then
+                login_domain="$reg_domain"
+                warning "Authentication required for ${reg_domain}."
+            else
+                warning "Authentication required for Docker Hub."
+            fi
+
+            if [[ -t 0 ]]; then
+                printf '\n%bWould you like to run "docker login" now to authenticate? [Y/n]:%b ' "${YELLOW}" "${NC}"
+                local do_login=""
+                read -r do_login || do_login="y"
+                if [[ -z "$do_login" || "$do_login" =~ ^[yY]([eE][sS])?$ ]]; then
+                    if [[ -n "$login_domain" ]]; then
+                        docker login "$login_domain"
+                    else
+                        docker login
+                    fi
+                    printf '\n%bRetrying upload for %s...%b\n' "${CYAN}" "$remote_image" "${NC}"
+                    if docker push "$remote_image"; then
+                        local digest
+                        digest="$(docker inspect --format='{{index .RepoDigests 0}}' "$remote_image" 2>/dev/null || true)"
+                        success "Successfully pushed: ${remote_image}"
+                        if [[ -n "$digest" ]]; then
+                            printf '  • %bDigest:%b %s\n' "${GREEN}" "${NC}" "$digest"
+                        fi
+                        continue
+                    fi
+                fi
+            fi
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+push_images() {
+    local target_service="${1:-}"
+    local registry=""
+    registry="$(detect_registry || true)"
+
+    local raw_tags
+    raw_tags="$(detect_target_tags)"
+
+    local services_to_push=()
+
+    if [[ -n "$target_service" ]]; then
+        local services=()
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && services+=("$line")
+        done < <(get_services)
+
+        local valid=0
+        for s in "${services[@]}"; do
+            if [[ "$s" == "$target_service" ]]; then
+                valid=1
+                break
+            fi
+        done
+        if [[ "$valid" -eq 0 ]]; then
+            error "Unknown service: $target_service"
+            printf '\n%s\n' "Available services: ${services[*]}" >&2
+            exit 1
+        fi
+        services_to_push+=("$target_service")
+    else
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && services_to_push+=("$line")
+        done < <(get_buildable_services)
+
+        if [[ "${#services_to_push[@]}" -eq 0 ]]; then
+            while IFS= read -r line; do
+                [[ -n "$line" ]] && services_to_push+=("$line")
+            done < <(get_services)
+        fi
+    fi
+
+    if [[ "${#services_to_push[@]}" -eq 0 ]]; then
+        error "No services found to push."
+        exit 1
+    fi
+
+    major_section "📦 Pushing Images to Docker Registry [${PROJECT_NAME}]"
+    if [[ -n "$registry" ]]; then
+        printf 'Registry:        %b%s%b\n' "${CYAN}" "$registry" "${NC}"
+    else
+        printf 'Registry:        %b(using image repository configured in Compose)%b\n' "${CYAN}" "${NC}"
+    fi
+    printf 'Target Services: %s\n' "${services_to_push[*]}"
+
+    local push_failed=0
+    for svc in "${services_to_push[@]}"; do
+        if ! push_service_image "$svc" "$registry" "$raw_tags" "$CLI_DRY_RUN" "$CLI_NO_BUILD"; then
+            push_failed=1
+            break
+        fi
+    done
+
+    if [[ "$push_failed" -ne 0 ]]; then
+        printf '\n'
+        error "One or more images failed to push to the registry."
+        exit 1
+    fi
+
+    printf '\n'
+    success "All target images successfully uploaded to the registry."
+}
+
 clean_environment() {
     local clean_volumes=0
     local clean_images=0
@@ -1399,6 +1673,11 @@ start() {
     check_prerequisites
     validate_compose
     check_and_prepare_services "$force_recreate"
+
+    if [[ "${CLI_PUSH:-0}" -eq 1 ]]; then
+        push_images ""
+    fi
+
     start_containers
     wait_for_services
     show_endpoints
@@ -1407,6 +1686,7 @@ start() {
     printf '%b\n' "${GREEN}${CHECK} ${PROJECT_NAME} deployment completed successfully.${NC}"
     printf '\n'
     printf '%b\n' "${BLUE}💡 Live Logs Tip:${NC}  ./${SCRIPT_NAME} live-logs [service]"
+    printf '%b\n' "${BLUE}💡 Push Tip:     ${NC}  ./${SCRIPT_NAME} push [service] -r <registry>"
     printf '%b\n' "${BLUE}💡 Recreate Tip: ${NC}  ./${SCRIPT_NAME} recreate [service]"
     printf '%b\n' "${BLUE}💡 Clean Tip:    ${NC}  ./${SCRIPT_NAME} clean"
 }
@@ -1425,6 +1705,11 @@ usage() {
     printf '  -f, --file <file>           Specify an alternate Compose file (default: docker-compose.yaml or docker-compose.yml)\n'
     printf '      --env-file <file>       Specify an alternate environment file (default: .env)\n'
     printf '  -p, --project-name <name>   Specify an alternate project name (default: from compose or dir)\n'
+    printf '  -r, --registry <url>        Specify target Docker registry (e.g. ghcr.io/org, docker.io/user)\n'
+    printf '  -t, --tag <tag>             Specify image tag(s) to push (comma-separated or repeatable)\n'
+    printf '      --push                  Push images to registry during deployment (start --push)\n'
+    printf '      --no-build              Skip rebuilding images before pushing\n'
+    printf '      --dry-run               Preview tagging and push operations without executing\n'
     printf '      --max-wait <seconds>    Max seconds to wait for service health (default: 120)\n'
     printf '      --interval <seconds>    Polling interval for health check (default: 3)\n'
     printf '      --no-color              Disable ANSI color codes and emojis (auto-detected in non-TTY)\n'
@@ -1436,6 +1721,9 @@ usage() {
     printf '  stop -v                     Stop containers and remove project persistent volumes\n'
     printf '  restart [service]           Restart service(s) (rebuilds automatically if code changed)\n'
     printf '  recreate [service]          Force rebuild and recreate service container(s)\n'
+    printf '  push [service]              Upload/push built container image(s) to Docker registry\n'
+    printf '  upload [service]            Alias for push\n'
+    printf '  login [registry]            Log in to Docker registry (Docker Hub, GHCR, etc.)\n'
     printf '  clean                       Safe interactive clean (containers, volumes, project images)\n'
     printf '  clean -v, --volumes         Clean project persistent Docker volumes\n'
     printf '  clean -i, --images          Remove Docker container images built for this project\n'
@@ -1478,9 +1766,6 @@ show_config() {
     done
 }
 
-# ------------------------------------------------------------------------------
-# Command Dispatcher
-# ------------------------------------------------------------------------------
 PARAM1="${ARGS[0]:-}"
 
 case "$COMMAND" in
@@ -1502,6 +1787,36 @@ case "$COMMAND" in
     recreate|rebuild)
         check_prerequisites
         recreate_containers "$PARAM1"
+        ;;
+    push|upload)
+        for a in "${ARGS[@]+"${ARGS[@]}"}"; do
+            if [[ "$a" == "-h" || "$a" == "--help" || "$a" == "help" ]]; then
+                printf 'Usage: %s push [service] [-r|--registry <url>] [-t|--tag <tag>] [--no-build] [--dry-run]\n' "$SCRIPT_NAME"
+                exit 0
+            fi
+        done
+        check_prerequisites
+        validate_compose
+        push_images "$PARAM1"
+        ;;
+    login)
+        target_reg="${PARAM1:-}"
+        if [[ -z "$target_reg" ]]; then
+            target_reg="$(detect_registry || true)"
+        fi
+        if [[ -n "$target_reg" ]]; then
+            reg_domain="${target_reg%%/*}"
+            if [[ "$reg_domain" =~ [.:] ]]; then
+                printf '%bLogging in to registry:%b %s\n' "${CYAN}" "${NC}" "$reg_domain"
+                docker login "$reg_domain"
+            else
+                printf '%bLogging in to Docker Hub...%b\n' "${CYAN}" "${NC}"
+                docker login
+            fi
+        else
+            printf '%bLogging in to Docker Hub...%b\n' "${CYAN}" "${NC}"
+            docker login
+        fi
         ;;
     clean|purge|prune)
         for a in "${ARGS[@]+"${ARGS[@]}"}"; do
