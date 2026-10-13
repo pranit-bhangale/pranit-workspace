@@ -1,6 +1,10 @@
 package com.pranit.workspace.portfolio.application.repository;
 
 import com.pranit.workspace.portfolio.domain.entity.Experience;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -11,12 +15,13 @@ import java.util.Optional;
 @Repository
 public interface ExperienceRepository extends JpaRepository<Experience, Long>, JpaSpecificationExecutor<Experience> {
 
+    @Override
     @EntityGraph(attributePaths = "techStacks")
-    Optional<Experience> findWithTechStacksById(Long id);
+    @NonNull
+    Optional<Experience> findById(@NonNull Long id);
 
     @Override
     @EntityGraph(attributePaths = "techStacks")
-    org.springframework.data.domain.Page<Experience> findAll(
-            org.springframework.data.jpa.domain.Specification<Experience> spec,
-            org.springframework.data.domain.Pageable pageable);
+    @NonNull
+    Page<Experience> findAll(@NonNull Specification<Experience> spec, @NonNull Pageable pageable);
 }

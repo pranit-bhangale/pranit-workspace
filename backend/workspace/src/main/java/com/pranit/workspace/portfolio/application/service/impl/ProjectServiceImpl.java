@@ -92,7 +92,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private Project validateAndFetchProjectById(final Long id) {
-        return this.projectRepository.findWithDetailsById(id)
+        return this.projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project with id " + id + " not found"));
     }
 
